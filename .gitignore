@@ -1,0 +1,12 @@
+# Baza de date (Nu urcam datele reale!)
+*.db
+
+# Fisiere de sistem Python
+__pycache__/
+*.pyc
+
+# Fisiere generate de PyInstaller
+build/
+dist/
+*.spec
+*.exe
