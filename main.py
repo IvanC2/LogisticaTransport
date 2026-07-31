@@ -188,7 +188,7 @@ class DailyTripsFormFrame(ctk.CTkScrollableFrame):
             var = ctk.StringVar()
             self.vars[field_id] = var
             if field_id == "date":
-                widget = DateEntry(fixed_frame, textvariable=var, date_pattern='yyyy-mm-dd', background='darkblue', foreground='white', borderwidth=2)
+                widget = DateEntry(fixed_frame, textvariable=var, date_pattern='yyyy-mm-dd', background='darkblue', foreground='white', borderwidth=2, font=('Helvetica', 12), width=15)
                 var.set(datetime.date.today().strftime("%Y-%m-%d"))
             elif field_id == "presence":
                 widget = ctk.CTkOptionMenu(fixed_frame, variable=var, values=["Prezent", "Absent", "Concediu", "Medical", "Liber"])
@@ -507,7 +507,7 @@ class TripFormFrame(ctk.CTkScrollableFrame):
                 elif field_id == "total_price":
                     widget = ctk.CTkEntry(self, textvariable=var, font=ctk.CTkFont(weight="bold"), text_color="#f39c12")
                 elif field_id == "date":
-                    widget = DateEntry(self, textvariable=var, date_pattern='yyyy-mm-dd', background='darkblue', foreground='white', borderwidth=2)
+                    widget = DateEntry(self, textvariable=var, date_pattern='yyyy-mm-dd', background='darkblue', foreground='white', borderwidth=2, font=('Helvetica', 12), width=15)
                     var.set(datetime.date.today().strftime("%Y-%m-%d"))
                 elif field_id == "driver_name":
                     vals = database.get_distinct_values("driver_name")
@@ -664,9 +664,9 @@ class CentralizatorFrame(ctk.CTkFrame):
         
         ctk.CTkCheckBox(row2, text="Activează Filtru Dată", variable=self.use_date_var).pack(side="left", padx=10)
         ctk.CTkLabel(row2, text="De la:").pack(side="left", padx=5)
-        DateEntry(row2, textvariable=self.start_date_var, date_pattern='yyyy-mm-dd', width=12).pack(side="left", padx=5)
+        DateEntry(row2, textvariable=self.start_date_var, date_pattern='yyyy-mm-dd', font=('Helvetica', 12), width=15).pack(side="left", padx=5)
         ctk.CTkLabel(row2, text="Până la:").pack(side="left", padx=5)
-        DateEntry(row2, textvariable=self.end_date_var, date_pattern='yyyy-mm-dd', width=12).pack(side="left", padx=5)
+        DateEntry(row2, textvariable=self.end_date_var, date_pattern='yyyy-mm-dd', font=('Helvetica', 12), width=15).pack(side="left", padx=5)
         
         ctk.CTkButton(row2, text="Filtrează / Caută", command=self.load_data).pack(side="left", padx=20)
         
@@ -879,11 +879,11 @@ class FinanciarFrame(ctk.CTkFrame):
         
         ctk.CTkLabel(import_frame, text="De la:").grid(row=1, column=2, padx=5, pady=5, sticky="e")
         self.start_date_var = ctk.StringVar(value=datetime.date.today().replace(day=1).strftime("%Y-%m-%d"))
-        DateEntry(import_frame, textvariable=self.start_date_var, date_pattern='yyyy-mm-dd', width=12).grid(row=1, column=3, padx=5, pady=5, sticky="w")
+        DateEntry(import_frame, textvariable=self.start_date_var, date_pattern='yyyy-mm-dd', font=('Helvetica', 12), width=15).grid(row=1, column=3, padx=5, pady=5, sticky="w")
         
         ctk.CTkLabel(import_frame, text="Până la:").grid(row=1, column=4, padx=5, pady=5, sticky="e")
         self.end_date_var = ctk.StringVar(value=datetime.date.today().strftime("%Y-%m-%d"))
-        DateEntry(import_frame, textvariable=self.end_date_var, date_pattern='yyyy-mm-dd', width=12).grid(row=1, column=5, padx=5, pady=5, sticky="w")
+        DateEntry(import_frame, textvariable=self.end_date_var, date_pattern='yyyy-mm-dd', font=('Helvetica', 12), width=15).grid(row=1, column=5, padx=5, pady=5, sticky="w")
         
         ctk.CTkButton(import_frame, text="Importă Date din Centralizator", command=self.import_data, fg_color="#3498db", hover_color="#2980b9").grid(row=2, column=0, columnspan=6, pady=15)
         
