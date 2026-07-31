@@ -193,6 +193,9 @@ class DailyTripsFormFrame(ctk.CTkScrollableFrame):
             elif field_id == "presence":
                 widget = ctk.CTkOptionMenu(fixed_frame, variable=var, values=["Prezent", "Absent", "Concediu", "Medical", "Liber"])
                 var.set("Prezent")
+            elif field_id == "driver_name":
+                vals = database.get_distinct_values("driver_name")
+                widget = ctk.CTkComboBox(fixed_frame, variable=var, values=vals)
             else:
                 widget = ctk.CTkEntry(fixed_frame, textvariable=var)
             widget.grid(row=row, column=col*2+1, padx=10, pady=5, sticky="w")
@@ -256,6 +259,18 @@ class DailyTripsFormFrame(ctk.CTkScrollableFrame):
                     
                 if field_id == "total_price":
                     widget = ctk.CTkEntry(dyn_frame, textvariable=var, font=ctk.CTkFont(weight="bold"), text_color="#f39c12")
+                elif field_id == "auto_number":
+                    vals = database.get_distinct_values("auto_number")
+                    widget = ctk.CTkComboBox(dyn_frame, variable=var, values=vals)
+                elif field_id == "auto_type":
+                    vals = database.get_distinct_values("auto_type")
+                    widget = ctk.CTkComboBox(dyn_frame, variable=var, values=vals)
+                elif field_id == "client":
+                    vals = database.get_distinct_values("client")
+                    widget = ctk.CTkComboBox(dyn_frame, variable=var, values=vals)
+                elif field_id == "location":
+                    vals = database.get_distinct_values("location")
+                    widget = ctk.CTkComboBox(dyn_frame, variable=var, values=vals)
                 else:
                     widget = ctk.CTkEntry(dyn_frame, textvariable=var)
                 widget.grid(row=row, column=col*2+1, padx=10, pady=5, sticky="w")
@@ -494,6 +509,21 @@ class TripFormFrame(ctk.CTkScrollableFrame):
                 elif field_id == "date":
                     widget = DateEntry(self, textvariable=var, date_pattern='yyyy-mm-dd', background='darkblue', foreground='white', borderwidth=2)
                     var.set(datetime.date.today().strftime("%Y-%m-%d"))
+                elif field_id == "driver_name":
+                    vals = database.get_distinct_values("driver_name")
+                    widget = ctk.CTkComboBox(self, variable=var, values=vals)
+                elif field_id == "auto_number":
+                    vals = database.get_distinct_values("auto_number")
+                    widget = ctk.CTkComboBox(self, variable=var, values=vals)
+                elif field_id == "auto_type":
+                    vals = database.get_distinct_values("auto_type")
+                    widget = ctk.CTkComboBox(self, variable=var, values=vals)
+                elif field_id == "client":
+                    vals = database.get_distinct_values("client")
+                    widget = ctk.CTkComboBox(self, variable=var, values=vals)
+                elif field_id == "location":
+                    vals = database.get_distinct_values("location")
+                    widget = ctk.CTkComboBox(self, variable=var, values=vals)
                 else:
                     widget = ctk.CTkEntry(self, textvariable=var)
                     
@@ -621,13 +651,13 @@ class CentralizatorFrame(ctk.CTkFrame):
         row1.pack(fill="x", pady=5)
         
         ctk.CTkLabel(row1, text="Șofer:").pack(side="left", padx=5)
-        ctk.CTkEntry(row1, textvariable=self.driver_var, width=120).pack(side="left", padx=5)
+        ctk.CTkComboBox(row1, variable=self.driver_var, values=[""] + database.get_distinct_values("driver_name"), width=120).pack(side="left", padx=5)
         
         ctk.CTkLabel(row1, text="Auto:").pack(side="left", padx=5)
-        ctk.CTkEntry(row1, textvariable=self.auto_var, width=120).pack(side="left", padx=5)
+        ctk.CTkComboBox(row1, variable=self.auto_var, values=[""] + database.get_distinct_values("auto_number"), width=120).pack(side="left", padx=5)
         
         ctk.CTkLabel(row1, text="Client:").pack(side="left", padx=5)
-        ctk.CTkEntry(row1, textvariable=self.client_var, width=120).pack(side="left", padx=5)
+        ctk.CTkComboBox(row1, variable=self.client_var, values=[""] + database.get_distinct_values("client"), width=120).pack(side="left", padx=5)
         
         row2 = ctk.CTkFrame(filter_frame, fg_color="transparent")
         row2.pack(fill="x", pady=5)
@@ -810,7 +840,7 @@ class FinanciarFrame(ctk.CTkFrame):
         
         ctk.CTkLabel(import_frame, text="Nume Șofer:").grid(row=1, column=0, padx=5, pady=5, sticky="e")
         self.driver_var = ctk.StringVar()
-        ctk.CTkEntry(import_frame, textvariable=self.driver_var).grid(row=1, column=1, padx=5, pady=5, sticky="w")
+        ctk.CTkComboBox(import_frame, variable=self.driver_var, values=[""] + database.get_distinct_values("driver_name")).grid(row=1, column=1, padx=5, pady=5, sticky="w")
         
         ctk.CTkLabel(import_frame, text="De la:").grid(row=1, column=2, padx=5, pady=5, sticky="e")
         self.start_date_var = ctk.StringVar(value=datetime.date.today().replace(day=1).strftime("%Y-%m-%d"))
