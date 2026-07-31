@@ -287,3 +287,18 @@ def get_driver_financial_summary(driver_name, start_date, end_date):
     km = result[1] if result[1] is not None else 0.0
     cars = result[2] if result[2] is not None else ""
     return rev, km, cars
+
+def get_distinct_values(column_name):
+    conn = get_connection()
+    cursor = conn.cursor()
+    # Safely format column_name since it comes from code
+    query = f"SELECT DISTINCT {column_name} FROM trips WHERE {column_name} IS NOT NULL AND {column_name} != '' ORDER BY {column_name} ASC"
+    try:
+        cursor.execute(query)
+        rows = cursor.fetchall()
+        values = [str(row[0]) for row in rows]
+    except Exception as e:
+        print(f"Eroare la obținerea valorilor distincte pentru {column_name}: {e}")
+        values = []
+    conn.close()
+    return values

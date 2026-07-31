@@ -188,11 +188,14 @@ class DailyTripsFormFrame(ctk.CTkScrollableFrame):
             var = ctk.StringVar()
             self.vars[field_id] = var
             if field_id == "date":
-                widget = DateEntry(fixed_frame, textvariable=var, date_pattern='yyyy-mm-dd', background='darkblue', foreground='white', borderwidth=2)
+                widget = DateEntry(fixed_frame, textvariable=var, date_pattern='yyyy-mm-dd', background='darkblue', foreground='white', borderwidth=2, font=('Helvetica', 12), width=15)
                 var.set(datetime.date.today().strftime("%Y-%m-%d"))
             elif field_id == "presence":
                 widget = ctk.CTkOptionMenu(fixed_frame, variable=var, values=["Prezent", "Absent", "Concediu", "Medical", "Liber"])
                 var.set("Prezent")
+            elif field_id == "driver_name":
+                vals = database.get_distinct_values("driver_name")
+                widget = ctk.CTkComboBox(fixed_frame, variable=var, values=vals)
             else:
                 widget = ctk.CTkEntry(fixed_frame, textvariable=var)
             widget.grid(row=row, column=col*2+1, padx=10, pady=5, sticky="w")
@@ -256,6 +259,18 @@ class DailyTripsFormFrame(ctk.CTkScrollableFrame):
                     
                 if field_id == "total_price":
                     widget = ctk.CTkEntry(dyn_frame, textvariable=var, font=ctk.CTkFont(weight="bold"), text_color="#f39c12")
+                elif field_id == "auto_number":
+                    vals = database.get_distinct_values("auto_number")
+                    widget = ctk.CTkComboBox(dyn_frame, variable=var, values=vals)
+                elif field_id == "auto_type":
+                    vals = database.get_distinct_values("auto_type")
+                    widget = ctk.CTkComboBox(dyn_frame, variable=var, values=vals)
+                elif field_id == "client":
+                    vals = database.get_distinct_values("client")
+                    widget = ctk.CTkComboBox(dyn_frame, variable=var, values=vals)
+                elif field_id == "location":
+                    vals = database.get_distinct_values("location")
+                    widget = ctk.CTkComboBox(dyn_frame, variable=var, values=vals)
                 else:
                     widget = ctk.CTkEntry(dyn_frame, textvariable=var)
                 widget.grid(row=row, column=col*2+1, padx=10, pady=5, sticky="w")
@@ -492,8 +507,23 @@ class TripFormFrame(ctk.CTkScrollableFrame):
                 elif field_id == "total_price":
                     widget = ctk.CTkEntry(self, textvariable=var, font=ctk.CTkFont(weight="bold"), text_color="#f39c12")
                 elif field_id == "date":
-                    widget = DateEntry(self, textvariable=var, date_pattern='yyyy-mm-dd', background='darkblue', foreground='white', borderwidth=2)
+                    widget = DateEntry(self, textvariable=var, date_pattern='yyyy-mm-dd', background='darkblue', foreground='white', borderwidth=2, font=('Helvetica', 12), width=15)
                     var.set(datetime.date.today().strftime("%Y-%m-%d"))
+                elif field_id == "driver_name":
+                    vals = database.get_distinct_values("driver_name")
+                    widget = ctk.CTkComboBox(self, variable=var, values=vals)
+                elif field_id == "auto_number":
+                    vals = database.get_distinct_values("auto_number")
+                    widget = ctk.CTkComboBox(self, variable=var, values=vals)
+                elif field_id == "auto_type":
+                    vals = database.get_distinct_values("auto_type")
+                    widget = ctk.CTkComboBox(self, variable=var, values=vals)
+                elif field_id == "client":
+                    vals = database.get_distinct_values("client")
+                    widget = ctk.CTkComboBox(self, variable=var, values=vals)
+                elif field_id == "location":
+                    vals = database.get_distinct_values("location")
+                    widget = ctk.CTkComboBox(self, variable=var, values=vals)
                 else:
                     widget = ctk.CTkEntry(self, textvariable=var)
                     
@@ -621,22 +651,22 @@ class CentralizatorFrame(ctk.CTkFrame):
         row1.pack(fill="x", pady=5)
         
         ctk.CTkLabel(row1, text="Șofer:").pack(side="left", padx=5)
-        ctk.CTkEntry(row1, textvariable=self.driver_var, width=120).pack(side="left", padx=5)
+        ctk.CTkComboBox(row1, variable=self.driver_var, values=[""] + database.get_distinct_values("driver_name"), width=120).pack(side="left", padx=5)
         
         ctk.CTkLabel(row1, text="Auto:").pack(side="left", padx=5)
-        ctk.CTkEntry(row1, textvariable=self.auto_var, width=120).pack(side="left", padx=5)
+        ctk.CTkComboBox(row1, variable=self.auto_var, values=[""] + database.get_distinct_values("auto_number"), width=120).pack(side="left", padx=5)
         
         ctk.CTkLabel(row1, text="Client:").pack(side="left", padx=5)
-        ctk.CTkEntry(row1, textvariable=self.client_var, width=120).pack(side="left", padx=5)
+        ctk.CTkComboBox(row1, variable=self.client_var, values=[""] + database.get_distinct_values("client"), width=120).pack(side="left", padx=5)
         
         row2 = ctk.CTkFrame(filter_frame, fg_color="transparent")
         row2.pack(fill="x", pady=5)
         
         ctk.CTkCheckBox(row2, text="Activează Filtru Dată", variable=self.use_date_var).pack(side="left", padx=10)
         ctk.CTkLabel(row2, text="De la:").pack(side="left", padx=5)
-        DateEntry(row2, textvariable=self.start_date_var, date_pattern='yyyy-mm-dd', width=12).pack(side="left", padx=5)
+        DateEntry(row2, textvariable=self.start_date_var, date_pattern='yyyy-mm-dd', font=('Helvetica', 12), width=15).pack(side="left", padx=5)
         ctk.CTkLabel(row2, text="Până la:").pack(side="left", padx=5)
-        DateEntry(row2, textvariable=self.end_date_var, date_pattern='yyyy-mm-dd', width=12).pack(side="left", padx=5)
+        DateEntry(row2, textvariable=self.end_date_var, date_pattern='yyyy-mm-dd', font=('Helvetica', 12), width=15).pack(side="left", padx=5)
         
         ctk.CTkButton(row2, text="Filtrează / Caută", command=self.load_data).pack(side="left", padx=20)
         
@@ -742,8 +772,42 @@ class CentralizatorFrame(ctk.CTkFrame):
             self.load_data()
 
     def export_excel(self):
-        filename = filedialog.asksaveasfilename(defaultextension=".xlsx", filetypes=[("Excel Files", "*.xlsx")])
-        if filename:
+        popup = ctk.CTkToplevel(self)
+        popup.title("Selectează Coloane pentru Export")
+        popup.geometry("400x500")
+        popup.grab_set()
+        
+        col_mapping = {
+            'date': 'Data', 'tip_zi': 'Tip Zi', 'driver_name': 'Nume Șofer', 'auto_number': 'Număr Auto',
+            'auto_type': 'Tip Auto', 'presence': 'Prezență', 'km_total': 'Km Parcurși Total',
+            'km_empty': 'Km pe Gol', 'km_loaded': 'Km Încărcat', 'daily_allowance': 'Diurnă',
+            'bonus': 'Premiere', 'meal_tickets': 'Bonuri Masă', 'client': 'Client',
+            'transport_type': 'Tip Transport', 'cargo_type': 'Tip Marfă', 'trailer': 'Remorcă',
+            'location': 'Locație/Rută', 'route_description': 'Descriere Traseu', 'trip_count': 'Nr. Curse', 'notice_number': 'Nr. Aviz',
+            'uit_code': 'Cod UIT', 'quantity_tons': 'Cantitate Tone', 'quantity_m3': 'Cantitate m3',
+            'pump_hours': 'Ore Pompă', 'wait_hours': 'Ore Staționare', 'price_per_km': 'Preț / Km',
+            'price_per_trip': 'Preț / Cursă', 'price_per_ton': 'Preț / Tonă', 'price_per_m3': 'Preț / m3',
+            'price_per_pump_hour': 'Preț Oră Pompă', 'price_per_wait_hour': 'Preț Oră Stațion.',
+            'total_price': 'Total Preț'
+        }
+        
+        scroll = ctk.CTkScrollableFrame(popup)
+        scroll.pack(fill="both", expand=True, padx=10, pady=10)
+        
+        checkboxes = {}
+        for db_col, ro_name in col_mapping.items():
+            var = ctk.BooleanVar(value=True)
+            cb = ctk.CTkCheckBox(scroll, text=ro_name, variable=var)
+            cb.pack(anchor="w", pady=2)
+            checkboxes[db_col] = var
+            
+        def do_export():
+            filename = filedialog.asksaveasfilename(defaultextension=".xlsx", filetypes=[("Excel Files", "*.xlsx")])
+            if not filename:
+                return
+                
+            selected_db_cols = [col for col, var in checkboxes.items() if var.get()]
+            
             driver = self.driver_var.get()
             auto = self.auto_var.get()
             client = self.client_var.get()
@@ -770,27 +834,28 @@ class CentralizatorFrame(ctk.CTkFrame):
             if 'date' in df.columns:
                 df.insert(2, 'tip_zi', df['date'].apply(get_day_type))
             
-            col_mapping = {
-                'id': 'ID', 'date': 'Data', 'tip_zi': 'Tip Zi', 'driver_name': 'Nume Șofer', 'auto_number': 'Număr Auto',
-                'auto_type': 'Tip Auto', 'presence': 'Prezență', 'km_total': 'Km Parcurși Total',
-                'km_empty': 'Km pe Gol', 'km_loaded': 'Km Încărcat', 'daily_allowance': 'Diurnă',
-                'bonus': 'Premiere', 'meal_tickets': 'Bonuri Masă', 'client': 'Client',
-                'transport_type': 'Tip Transport', 'cargo_type': 'Tip Marfă', 'trailer': 'Remorcă',
-                'location': 'Locație/Rută', 'route_description': 'Descriere Traseu', 'trip_count': 'Nr. Curse', 'notice_number': 'Nr. Aviz',
-                'uit_code': 'Cod UIT', 'quantity_tons': 'Cantitate Tone', 'quantity_m3': 'Cantitate m3',
-                'pump_hours': 'Ore Pompă', 'wait_hours': 'Ore Staționare', 'price_per_km': 'Preț / Km',
-                'price_per_trip': 'Preț / Cursă', 'price_per_ton': 'Preț / Tonă', 'price_per_m3': 'Preț / m3',
-                'price_per_pump_hour': 'Preț Oră Pompă', 'price_per_wait_hour': 'Preț Oră Stațion.',
-                'total_price': 'Total Preț'
-            }
+            cols_to_keep = [c for c in selected_db_cols if c in df.columns]
+            df = df[cols_to_keep]
             
-            df.rename(columns=col_mapping, inplace=True)
+            final_mapping = {c: col_mapping[c] for c in cols_to_keep}
+            df.rename(columns=final_mapping, inplace=True)
+            
             if 'Data' in df.columns:
                 df.sort_values(by='Data', ascending=True, inplace=True)
+                
             df.drop(columns=['ID'], errors='ignore', inplace=True)
             df.to_excel(filename, index=False)
-            apply_excel_formatting(filename, date_col_name="Data", tip_zi_col_name="Tip Zi")
+            
+            if 'Data' in df.columns:
+                apply_excel_formatting(filename, date_col_name="Data", tip_zi_col_name="Tip Zi")
+            else:
+                apply_excel_formatting(filename)
+                
             messagebox.showinfo("Succes", "Datele au fost exportate cu succes!")
+            popup.destroy()
+            
+        btn = ctk.CTkButton(popup, text="Generează Raport", command=do_export, fg_color="#27ae60", hover_color="#2ecc71")
+        btn.pack(pady=10)
 
 class FinanciarFrame(ctk.CTkFrame):
     def __init__(self, master):
@@ -810,15 +875,15 @@ class FinanciarFrame(ctk.CTkFrame):
         
         ctk.CTkLabel(import_frame, text="Nume Șofer:").grid(row=1, column=0, padx=5, pady=5, sticky="e")
         self.driver_var = ctk.StringVar()
-        ctk.CTkEntry(import_frame, textvariable=self.driver_var).grid(row=1, column=1, padx=5, pady=5, sticky="w")
+        ctk.CTkComboBox(import_frame, variable=self.driver_var, values=[""] + database.get_distinct_values("driver_name")).grid(row=1, column=1, padx=5, pady=5, sticky="w")
         
         ctk.CTkLabel(import_frame, text="De la:").grid(row=1, column=2, padx=5, pady=5, sticky="e")
         self.start_date_var = ctk.StringVar(value=datetime.date.today().replace(day=1).strftime("%Y-%m-%d"))
-        DateEntry(import_frame, textvariable=self.start_date_var, date_pattern='yyyy-mm-dd', width=12).grid(row=1, column=3, padx=5, pady=5, sticky="w")
+        DateEntry(import_frame, textvariable=self.start_date_var, date_pattern='yyyy-mm-dd', font=('Helvetica', 12), width=15).grid(row=1, column=3, padx=5, pady=5, sticky="w")
         
         ctk.CTkLabel(import_frame, text="Până la:").grid(row=1, column=4, padx=5, pady=5, sticky="e")
         self.end_date_var = ctk.StringVar(value=datetime.date.today().strftime("%Y-%m-%d"))
-        DateEntry(import_frame, textvariable=self.end_date_var, date_pattern='yyyy-mm-dd', width=12).grid(row=1, column=5, padx=5, pady=5, sticky="w")
+        DateEntry(import_frame, textvariable=self.end_date_var, date_pattern='yyyy-mm-dd', font=('Helvetica', 12), width=15).grid(row=1, column=5, padx=5, pady=5, sticky="w")
         
         ctk.CTkButton(import_frame, text="Importă Date din Centralizator", command=self.import_data, fg_color="#3498db", hover_color="#2980b9").grid(row=2, column=0, columnspan=6, pady=15)
         
