@@ -150,7 +150,17 @@ def init_db():
         cursor.execute("ALTER TABLE driver_profiles ADD COLUMN trailer_rate REAL DEFAULT 0.0")
     except Exception: pass
 
+    
+    # Update for External Trips
+    try:
+        cursor.execute("ALTER TABLE driver_profiles ADD COLUMN external_rate REAL DEFAULT 0.0")
+    except Exception: pass
+    try:
+        cursor.execute("ALTER TABLE trips ADD COLUMN is_external TEXT DEFAULT 'NU'")
+    except Exception: pass
+
     conn.commit()
+
 
 
     conn.close()
@@ -352,7 +362,7 @@ def get_distinct_values(column_name):
 def get_driver_profile(driver_name):
     conn = get_connection()
     cursor = conn.cursor()
-    cursor.execute("SELECT base_salary, day_rate, km_rate, diurna_rate, premiere_rate, meal_ticket_rate, weekend_rate, holiday_rate, agabaritic_rate, adr_rate, insotire_rate, trailer_rate FROM driver_profiles WHERE driver_name=?", (driver_name,))
+    cursor.execute("SELECT base_salary, day_rate, km_rate, diurna_rate, premiere_rate, meal_ticket_rate, weekend_rate, holiday_rate, agabaritic_rate, adr_rate, insotire_rate, trailer_rate, external_rate FROM driver_profiles WHERE driver_name=?", (driver_name,))
     row = cursor.fetchone()
     conn.close()
     if row:
@@ -366,16 +376,17 @@ def get_driver_profile(driver_name):
             "agabaritic_rate": row[8] if row[8] is not None else 0.0,
             "adr_rate": row[9] if row[9] is not None else 0.0,
             "insotire_rate": row[10] if row[10] is not None else 0.0,
-            "trailer_rate": row[11] if row[11] is not None else 0.0
+            "trailer_rate": row[11] if row[11] is not None else 0.0,
+            "external_rate": row[12] if row[12] is not None else 0.0
         }
-    return {"base_salary": 0.0, "day_rate": 0.0, "km_rate": 0.0, "diurna_rate": 0.0, "premiere_rate": 0.0, "meal_ticket_rate": 0.0, "weekend_rate": 0.0, "holiday_rate": 0.0, "agabaritic_rate": 0.0, "adr_rate": 0.0, "insotire_rate": 0.0, "trailer_rate": 0.0}
+    return {"base_salary": 0.0, "day_rate": 0.0, "km_rate": 0.0, "diurna_rate": 0.0, "premiere_rate": 0.0, "meal_ticket_rate": 0.0, "weekend_rate": 0.0, "holiday_rate": 0.0, "agabaritic_rate": 0.0, "adr_rate": 0.0, "insotire_rate": 0.0, "trailer_rate": 0.0, "external_rate": 0.0}
 
-def save_driver_profile(name, base, day, km, diurna=0.0, premiere=0.0, meal=0.0, weekend=0.0, holiday=0.0, agabaritic=0.0, adr=0.0, insotire=0.0, trailer=0.0):
+def save_driver_profile(name, base, day, km, diurna=0.0, premiere=0.0, meal=0.0, weekend=0.0, holiday=0.0, agabaritic=0.0, adr=0.0, insotire=0.0, trailer=0.0, external=0.0):
     conn = get_connection()
     cursor = conn.cursor()
     cursor.execute('''
-        INSERT INTO driver_profiles (driver_name, base_salary, day_rate, km_rate, diurna_rate, premiere_rate, meal_ticket_rate, weekend_rate, holiday_rate, agabaritic_rate, adr_rate, insotire_rate, trailer_rate)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO driver_profiles (driver_name, base_salary, day_rate, km_rate, diurna_rate, premiere_rate, meal_ticket_rate, weekend_rate, holiday_rate, agabaritic_rate, adr_rate, insotire_rate, trailer_rate, external_rate)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ON CONFLICT(driver_name) DO UPDATE SET
             base_salary=excluded.base_salary,
             day_rate=excluded.day_rate,
@@ -388,8 +399,9 @@ def save_driver_profile(name, base, day, km, diurna=0.0, premiere=0.0, meal=0.0,
             agabaritic_rate=excluded.agabaritic_rate,
             adr_rate=excluded.adr_rate,
             insotire_rate=excluded.insotire_rate,
-            trailer_rate=excluded.trailer_rate
-    ''', (name, base, day, km, diurna, premiere, meal, weekend, holiday, agabaritic, adr, insotire, trailer))
+            trailer_rate=excluded.trailer_rate,
+            external_rate=excluded.external_rate
+    ''', (name, base, day, km, diurna, premiere, meal, weekend, holiday, agabaritic, adr, insotire, trailer, external))
     conn.commit()
     conn.close()
 
@@ -401,7 +413,7 @@ def get_trips_for_salary(driver_name, month, year):
     date_pattern = f"{year}-{str(month).zfill(2)}-%"
     
     cursor.execute('''
-        SELECT date, client, km_total, daily_allowance, bonus, meal_tickets, presence, transport_type, trailer 
+        SELECT date, client, km_total, daily_allowance, bonus, meal_tickets, presence, transport_type, trailer, is_external 
         FROM trips 
         WHERE driver_name=? AND date LIKE ?
     ''', (driver_name, date_pattern))
@@ -423,7 +435,7 @@ def delete_driver_profile(driver_name):
 def get_all_driver_profiles():
     conn = get_connection()
     cursor = conn.cursor()
-    cursor.execute("SELECT driver_name, base_salary, day_rate, km_rate, diurna_rate, premiere_rate, meal_ticket_rate, weekend_rate, holiday_rate, agabaritic_rate, adr_rate, insotire_rate, trailer_rate FROM driver_profiles ORDER BY driver_name ASC")
+    cursor.execute("SELECT driver_name, base_salary, day_rate, km_rate, diurna_rate, premiere_rate, meal_ticket_rate, weekend_rate, holiday_rate, agabaritic_rate, adr_rate, insotire_rate, trailer_rate, external_rate FROM driver_profiles ORDER BY driver_name ASC")
     columns = [column[0] for column in cursor.description]
     results = []
     for row in cursor.fetchall():
