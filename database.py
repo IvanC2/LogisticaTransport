@@ -21,6 +21,7 @@ def init_db():
     conn = get_connection()
     cursor = conn.cursor()
 
+    # 1. CREATE ALL TABLES FIRST
     # Tabel Users
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS users (
@@ -69,20 +70,6 @@ def init_db():
         )
     ''')
 
-    # Migrare automată pentru versiuni vechi ale bazei de date (Trips)
-    cursor.execute("PRAGMA table_info(trips)")
-    existing_columns = [col[1] for col in cursor.fetchall()]
-    if "route_description" not in existing_columns:
-        cursor.execute("ALTER TABLE trips ADD COLUMN route_description TEXT")
-
-    # Migrare automată pentru monthly_expenses
-    cursor.execute("PRAGMA table_info(monthly_expenses)")
-    existing_exp_columns = [col[1] for col in cursor.fetchall()]
-    new_cols = ['start_date', 'end_date', 'total_revenue', 'total_km', 'cars_used', 'gross_salary', 'total_expenses', 'net_profit']
-    for c in new_cols:
-        if c not in existing_exp_columns:
-            cursor.execute(f"ALTER TABLE monthly_expenses ADD COLUMN {c} REAL" if c not in ['start_date', 'end_date', 'cars_used'] else f"ALTER TABLE monthly_expenses ADD COLUMN {c} TEXT")
-
     # Tabel Monthly Expenses (Cheltuieli lunare)
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS monthly_expenses (
@@ -99,14 +86,7 @@ def init_db():
         )
     ''')
 
-    # Creăm un utilizator implicit (Admin) dacă baza de date e goală
-    cursor.execute("SELECT COUNT(*) FROM users")
-    if cursor.fetchone()[0] == 0:
-        admin_pass = hash_password('admin123')
-        cursor.execute("INSERT INTO users (username, password_hash, role) VALUES (?, ?, ?)",
-                       ('admin', admin_pass, 'Admin'))
-
-        # Tabel Driver Profiles
+    # Tabel Driver Profiles
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS driver_profiles (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -117,55 +97,62 @@ def init_db():
         )
     ''')
 
-    
-    # Update driver_profiles for V3
-    try:
-        cursor.execute("ALTER TABLE driver_profiles ADD COLUMN diurna_rate REAL DEFAULT 0.0")
-    except Exception: pass
-    try:
-        cursor.execute("ALTER TABLE driver_profiles ADD COLUMN premiere_rate REAL DEFAULT 0.0")
-    except Exception: pass
-    try:
-        cursor.execute("ALTER TABLE driver_profiles ADD COLUMN meal_ticket_rate REAL DEFAULT 0.0")
-    except Exception: pass
-    try:
-        cursor.execute("ALTER TABLE driver_profiles ADD COLUMN weekend_rate REAL DEFAULT 0.0")
-    except Exception: pass
-    try:
-        cursor.execute("ALTER TABLE driver_profiles ADD COLUMN holiday_rate REAL DEFAULT 0.0")
-    except Exception: pass
-
-    
-    # Update driver_profiles for Transport Types
-    try:
-        cursor.execute("ALTER TABLE driver_profiles ADD COLUMN agabaritic_rate REAL DEFAULT 0.0")
-    except Exception: pass
-    try:
-        cursor.execute("ALTER TABLE driver_profiles ADD COLUMN adr_rate REAL DEFAULT 0.0")
-    except Exception: pass
-    try:
-        cursor.execute("ALTER TABLE driver_profiles ADD COLUMN insotire_rate REAL DEFAULT 0.0")
-    except Exception: pass
-    try:
-        cursor.execute("ALTER TABLE driver_profiles ADD COLUMN trailer_rate REAL DEFAULT 0.0")
-    except Exception: pass
-
-    
-    # Update for External Trips
-    try:
-        cursor.execute("ALTER TABLE driver_profiles ADD COLUMN external_rate REAL DEFAULT 0.0")
-    except Exception: pass
+    # 2. RUN ALL ALTER TABLES / MIGRATIONS
+    # Migrare automată pentru versiuni vechi ale bazei de date (Trips)
+    cursor.execute("PRAGMA table_info(trips)")
+    existing_columns = [col[1] for col in cursor.fetchall()]
+    if "route_description" not in existing_columns:
+        cursor.execute("ALTER TABLE trips ADD COLUMN route_description TEXT")
+        
     try:
         cursor.execute("ALTER TABLE trips ADD COLUMN is_external TEXT DEFAULT 'NU'")
     except Exception: pass
 
+    # Migrare automată pentru monthly_expenses
+    cursor.execute("PRAGMA table_info(monthly_expenses)")
+    existing_exp_columns = [col[1] for col in cursor.fetchall()]
+    new_cols = ['start_date', 'end_date', 'total_revenue', 'total_km', 'cars_used', 'gross_salary', 'total_expenses', 'net_profit']
+    for c in new_cols:
+        if c not in existing_exp_columns:
+            cursor.execute(f"ALTER TABLE monthly_expenses ADD COLUMN {c} REAL" if c not in ['start_date', 'end_date', 'cars_used'] else f"ALTER TABLE monthly_expenses ADD COLUMN {c} TEXT")
+
+    # Update driver_profiles for V3
+    try: cursor.execute("ALTER TABLE driver_profiles ADD COLUMN diurna_rate REAL DEFAULT 0.0")
+    except Exception: pass
+    try: cursor.execute("ALTER TABLE driver_profiles ADD COLUMN premiere_rate REAL DEFAULT 0.0")
+    except Exception: pass
+    try: cursor.execute("ALTER TABLE driver_profiles ADD COLUMN meal_ticket_rate REAL DEFAULT 0.0")
+    except Exception: pass
+    try: cursor.execute("ALTER TABLE driver_profiles ADD COLUMN weekend_rate REAL DEFAULT 0.0")
+    except Exception: pass
+    try: cursor.execute("ALTER TABLE driver_profiles ADD COLUMN holiday_rate REAL DEFAULT 0.0")
+    except Exception: pass
+
+    # Update driver_profiles for Transport Types
+    try: cursor.execute("ALTER TABLE driver_profiles ADD COLUMN agabaritic_rate REAL DEFAULT 0.0")
+    except Exception: pass
+    try: cursor.execute("ALTER TABLE driver_profiles ADD COLUMN adr_rate REAL DEFAULT 0.0")
+    except Exception: pass
+    try: cursor.execute("ALTER TABLE driver_profiles ADD COLUMN insotire_rate REAL DEFAULT 0.0")
+    except Exception: pass
+    try: cursor.execute("ALTER TABLE driver_profiles ADD COLUMN trailer_rate REAL DEFAULT 0.0")
+    except Exception: pass
+
+    # Update for External Trips
+    try: cursor.execute("ALTER TABLE driver_profiles ADD COLUMN external_rate REAL DEFAULT 0.0")
+    except Exception: pass
+
+    # 3. OTHER INITIALIZATIONS
+    # Creăm un utilizator implicit (Admin) dacă baza de date e goală
+    cursor.execute("SELECT COUNT(*) FROM users")
+    if cursor.fetchone()[0] == 0:
+        admin_pass = hash_password('admin123')
+        cursor.execute("INSERT INTO users (username, password_hash, role) VALUES (?, ?, ?)",
+                       ('admin', admin_pass, 'Admin'))
+
     conn.commit()
-
-
-
     conn.close()
 
-# --- USERS CRUD ---
 
 def authenticate_user(username, password):
     conn = get_connection()

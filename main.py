@@ -192,7 +192,7 @@ class DailyTripsFormFrame(ctk.CTkScrollableFrame):
                 var.set(datetime.date.today().strftime("%Y-%m-%d"))
             elif field_id == "presence":
                 widget = ctk.CTkOptionMenu(fixed_frame, variable=var, values=["Prezent", "Liber", "Garaj", "Medical", "Concediu"])
-                var.set("Prezent")
+                var.set("Liber")
             elif field_id == "driver_name":
                 vals = database.get_distinct_values("driver_name")
                 widget = ctk.CTkComboBox(fixed_frame, variable=var, values=vals)
@@ -1555,7 +1555,7 @@ class SalariesFrame(ctk.CTkFrame):
         trailer_pay_total = trailer_count * trailer_rate
         
         total_salary = (base_salary + days_pay_total + internal_km_pay_total + total_external_ron + weekend_pay_total + holiday_pay_total + 
-                       total_allowance + total_bonus + 
+                       total_allowance + total_bonus + total_meal + 
                        agab_pay_total + adr_pay_total + insotire_pay_total + trailer_pay_total)
         rest_plata = total_salary - advance - total_meal
         
@@ -1617,10 +1617,11 @@ class SalariesFrame(ctk.CTkFrame):
         report.append("-" * 50)
         report.append(f"Diurnă ({qty_allowance} x {diurna_rate:.2f}): {total_allowance:.2f} Lei")
         report.append(f"Premiere ({qty_bonus} x {premiere_rate:.2f}): {total_bonus:.2f} Lei")
+        if total_meal > 0: report.append(f"Bani Bonuri Masă ({qty_meal} x {meal_rate:.2f}): {total_meal:.2f} Lei")
         report.append("-" * 50)
         report.append(f"TOTAL SALARIU (Brut): {total_salary:.2f} Lei")
         if advance > 0: report.append(f"Deducere Avans: -{advance:.2f} Lei")
-        if total_meal > 0: report.append(f"Deducere Bonuri Masă ({qty_meal} x {meal_rate:.2f}): -{total_meal:.2f} Lei")
+        if total_meal > 0: report.append(f"Deducere Bonuri Masă: -{total_meal:.2f} Lei")
         report.append(f"REST DE PLATĂ (Lichidare): {rest_plata:.2f} Lei")
         report.append("=" * 50)
         report.append("Detalii pe Zile:")
