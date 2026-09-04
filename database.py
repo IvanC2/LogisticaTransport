@@ -141,6 +141,10 @@ def init_db():
     # Update for External Trips
     try: cursor.execute("ALTER TABLE driver_profiles ADD COLUMN external_rate REAL DEFAULT 0.0")
     except Exception: pass
+    try: cursor.execute("ALTER TABLE trips ADD COLUMN is_external TEXT DEFAULT 'NU'")
+    except Exception: pass
+    try: cursor.execute("ALTER TABLE trips ADD COLUMN special_transport_count INTEGER DEFAULT 1")
+    except Exception: pass
 
     # 3. OTHER INITIALIZATIONS
     # Creăm un utilizator implicit (Admin) dacă baza de date e goală
@@ -400,7 +404,7 @@ def get_trips_for_salary(driver_name, month, year):
     date_pattern = f"{year}-{str(month).zfill(2)}-%"
     
     cursor.execute('''
-        SELECT date, client, km_total, daily_allowance, bonus, meal_tickets, presence, transport_type, trailer, is_external 
+        SELECT date, client, km_total, daily_allowance, bonus, meal_tickets, presence, transport_type, trailer, is_external, special_transport_count 
         FROM trips 
         WHERE driver_name=? AND date LIKE ?
     ''', (driver_name, date_pattern))

@@ -214,7 +214,7 @@ class DailyTripsFormFrame(ctk.CTkScrollableFrame):
         
         self.dyn_fields = [
             ("auto_number", "Număr Auto", "Auto"), ("auto_type", "Tip Auto", "Auto"),
-            ("client", "Client", "Marfă"), ("transport_type", "Tip Transport", "Marfă"), ("cargo_type", "Tip Marfă", "Marfă"),
+            ("client", "Client", "Marfă"), ("transport_type", "Tip Transport", "Marfă"), ("special_transport_count", "Nr. Curse Speciale", "Marfă"), ("cargo_type", "Tip Marfă", "Marfă"),
             ("trailer", "Remorcă", "Marfă"), ("notice_number", "Nr. Aviz", "Marfă"), ("uit_code", "Cod UIT", "Marfă"),
             ("location", "Locație/Rută", "Traseu"), ("route_description", "Descriere Traseu", "Traseu"), ("is_external", "Cursă Externă", "Traseu"),
             ("km_total", "Km Total", "Traseu"), ("km_empty", "Km Gol", "Traseu"), ("km_loaded", "Km Încărcat", "Traseu"),
@@ -284,6 +284,9 @@ class DailyTripsFormFrame(ctk.CTkScrollableFrame):
                     vals = ["NU", "DA"]
                     widget = ctk.CTkComboBox(dyn_frame, variable=var, values=vals)
                     var.set("NU")
+                elif field_id == "special_transport_count":
+                    widget = ctk.CTkEntry(dyn_frame, textvariable=var)
+                    var.set("1")
                 else:
                     widget = ctk.CTkEntry(dyn_frame, textvariable=var)
                 widget.grid(row=row, column=col*2+1, padx=10, pady=5, sticky="w")
@@ -394,6 +397,9 @@ class DailyTripsFormFrame(ctk.CTkScrollableFrame):
                 elif field == "trip_count":
                     try: data[field] = int(val) if val else 0
                     except ValueError: data[field] = 0
+                elif field == "special_transport_count":
+                    try: data[field] = int(val) if val else 1
+                    except ValueError: data[field] = 1
                 else:
                     try: data[field] = float(str(val).replace(',', '.')) if val else 0.0
                     except ValueError: data[field] = 0.0
@@ -450,6 +456,7 @@ class TripFormFrame(ctk.CTkScrollableFrame):
             
             ("client", "Client", "Detalii Marfă"),
             ("transport_type", "Tip Transport", "Detalii Marfă"),
+            ("special_transport_count", "Nr. Curse Speciale", "Detalii Marfă"),
             ("cargo_type", "Tip Marfă", "Detalii Marfă"),
             ("trailer", "Remorcă", "Detalii Marfă"),
             ("notice_number", "Nr. Aviz", "Detalii Marfă"),
@@ -555,6 +562,10 @@ class TripFormFrame(ctk.CTkScrollableFrame):
                     vals = ["NU", "DA"]
                     widget = ctk.CTkComboBox(self, variable=var, values=vals)
                     var.set("NU")
+                elif field_id == "special_transport_count":
+                    widget = ctk.CTkEntry(self, textvariable=var)
+                    if not self.edit_trip:
+                        var.set("1")
                 else:
                     widget = ctk.CTkEntry(self, textvariable=var)
                     
@@ -635,6 +646,11 @@ class TripFormFrame(ctk.CTkScrollableFrame):
                     data[field] = int(val) if val else 0
                 except ValueError:
                     data[field] = 0
+            elif field == "special_transport_count":
+                try:
+                    data[field] = int(val) if val else 1
+                except ValueError:
+                    data[field] = 1
             else:
                 try:
                     data[field] = float(val.replace(',', '.')) if val else 0.0
@@ -1447,13 +1463,16 @@ class SalariesFrame(ctk.CTkFrame):
             qty_meal += (t["meal_tickets"] or 0.0)
             
             # Count transport types
+            sp_raw = t.get("special_transport_count")
+            sp_count = int(sp_raw) if sp_raw is not None and str(sp_raw).strip() != "" else 1
+            
             ttype = str(t.get("transport_type", "")).upper().strip()
-            if ttype == "AGABARITIC": agab_count += 1
-            if ttype == "ADR": adr_count += 1
-            if ttype == "INSOTIRE": insotire_count += 1
+            if ttype == "AGABARITIC": agab_count += 1 * sp_count
+            if ttype == "ADR": adr_count += 1 * sp_count
+            if ttype == "INSOTIRE": insotire_count += 1 * sp_count
             
             trailer_val = str(t.get("trailer", "")).upper().strip()
-            if trailer_val == "DA": trailer_count += 1
+            if trailer_val == "DA": trailer_count += 1 * sp_count
             
         paid_days_count = 0
         internal_km_pay_total = 0.0
@@ -1491,16 +1510,27 @@ class SalariesFrame(ctk.CTkFrame):
                 if is_holiday:
                     holiday_days_worked += 1
                 
-            is_only_aguaki = (len(clients) == 1 and "AGUAKI" in clients)
+            valid_clients = [c for c in clients if c and c not in ("NONE", "")]
+            is_only_aguaki = (len(valid_clients) == 1 and "AGUAKI" in valid_clients)
             
             day_pay_val = 0.0
             km_pay_val = 0.0
             ext_pay_euro = 0.0
             status_desc = ""
             
-            if total_km == 0 or "Liber" in presences or "Garaj" in presences:
-                status_desc = "Nu s-a lucrat (KM=0/Liber/Garaj)"
+            if "Liber" in presences or "Garaj" in presences:
+                status_desc = "Nu s-a lucrat (Liber/Garaj)"
                 days_log.append(f"{d} | {total_km:.1f} KM | {status_desc} -> Plată = 0 Lei")
+            elif total_km == 0:
+                has_non_aguaki = any(c != "AGUAKI" for c in valid_clients)
+                if len(valid_clients) > 0 and has_non_aguaki:
+                    paid_days_count += 1
+                    day_pay_val = day_rate
+                    status_desc = "Staționare Client (!=AGUAKI)"
+                    days_log.append(f"{d} | {total_km:.1f} KM | {status_desc} -> Plată la zi: {day_pay_val:.2f} Lei")
+                else:
+                    status_desc = "Nu s-a lucrat (KM=0)"
+                    days_log.append(f"{d} | {total_km:.1f} KM | {status_desc} -> Plată = 0 Lei")
             elif has_ext:
                 # Variant A logic: No day rate. External km paid in Euro, Internal km paid at km_rate
                 ext_pay_euro = (ext_km * external_rate) / 100
