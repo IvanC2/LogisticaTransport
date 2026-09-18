@@ -191,8 +191,8 @@ class DailyTripsFormFrame(ctk.CTkScrollableFrame):
                 widget = DateEntry(fixed_frame, textvariable=var, date_pattern='yyyy-mm-dd', background='darkblue', foreground='white', borderwidth=2, font=('Helvetica', 12), width=15)
                 var.set(datetime.date.today().strftime("%Y-%m-%d"))
             elif field_id == "presence":
-                widget = ctk.CTkOptionMenu(fixed_frame, variable=var, values=["Prezent", "Absent", "Concediu", "Medical", "Liber"])
-                var.set("Prezent")
+                widget = ctk.CTkOptionMenu(fixed_frame, variable=var, values=["Prezent", "Liber", "Garaj", "Medical", "Concediu"])
+                var.set("Liber")
             elif field_id == "driver_name":
                 vals = database.get_distinct_values("driver_name")
                 widget = ctk.CTkComboBox(fixed_frame, variable=var, values=vals)
@@ -214,9 +214,9 @@ class DailyTripsFormFrame(ctk.CTkScrollableFrame):
         
         self.dyn_fields = [
             ("auto_number", "Număr Auto", "Auto"), ("auto_type", "Tip Auto", "Auto"),
-            ("client", "Client", "Marfă"), ("transport_type", "Tip Transport", "Marfă"), ("cargo_type", "Tip Marfă", "Marfă"),
+            ("client", "Client", "Marfă"), ("transport_type", "Tip Transport", "Marfă"), ("special_transport_count", "Nr. Curse Speciale", "Marfă"), ("cargo_type", "Tip Marfă", "Marfă"),
             ("trailer", "Remorcă", "Marfă"), ("notice_number", "Nr. Aviz", "Marfă"), ("uit_code", "Cod UIT", "Marfă"),
-            ("location", "Locație/Rută", "Traseu"), ("route_description", "Descriere Traseu", "Traseu"),
+            ("location", "Locație/Rută", "Traseu"), ("route_description", "Descriere Traseu", "Traseu"), ("is_external", "Cursă Externă", "Traseu"),
             ("km_total", "Km Total", "Traseu"), ("km_empty", "Km Gol", "Traseu"), ("km_loaded", "Km Încărcat", "Traseu"),
             ("quantity_tons", "Cant. Tone", "Cantități"), ("quantity_m3", "Cant. m³", "Cantități"), ("trip_count", "Nr. Curse", "Cantități"),
             ("pump_hours", "Ore Pompă", "Cantități"), ("wait_hours", "Ore Staționare", "Cantități"),
@@ -271,6 +271,22 @@ class DailyTripsFormFrame(ctk.CTkScrollableFrame):
                 elif field_id == "location":
                     vals = database.get_distinct_values("location")
                     widget = ctk.CTkComboBox(dyn_frame, variable=var, values=vals)
+                elif field_id == "transport_type":
+                    base_vals = ["", "AGABARITIC", "ADR", "INSOTIRE"]
+                    db_vals = database.get_distinct_values("transport_type")
+                    vals = list(dict.fromkeys(base_vals + db_vals))
+                    widget = ctk.CTkComboBox(dyn_frame, variable=var, values=vals)
+                elif field_id == "trailer":
+                    vals = ["NU", "DA"]
+                    widget = ctk.CTkComboBox(dyn_frame, variable=var, values=vals)
+                    var.set("NU")
+                elif field_id == "is_external":
+                    vals = ["NU", "DA"]
+                    widget = ctk.CTkComboBox(dyn_frame, variable=var, values=vals)
+                    var.set("NU")
+                elif field_id == "special_transport_count":
+                    widget = ctk.CTkEntry(dyn_frame, textvariable=var)
+                    var.set("1")
                 else:
                     widget = ctk.CTkEntry(dyn_frame, textvariable=var)
                 widget.grid(row=row, column=col*2+1, padx=10, pady=5, sticky="w")
@@ -376,11 +392,14 @@ class DailyTripsFormFrame(ctk.CTkScrollableFrame):
                 if field == "_tree_id": continue
                 
                 val = trip[field]
-                if field in ["presence", "date", "driver_name", "auto_number", "auto_type", "client", "transport_type", "cargo_type", "trailer", "location", "route_description", "notice_number", "uit_code"]:
+                if field in ["presence", "date", "driver_name", "auto_number", "auto_type", "client", "transport_type", "cargo_type", "trailer", "location", "route_description", "notice_number", "uit_code", "is_external"]:
                     data[field] = val
                 elif field == "trip_count":
                     try: data[field] = int(val) if val else 0
                     except ValueError: data[field] = 0
+                elif field == "special_transport_count":
+                    try: data[field] = int(val) if val else 1
+                    except ValueError: data[field] = 1
                 else:
                     try: data[field] = float(str(val).replace(',', '.')) if val else 0.0
                     except ValueError: data[field] = 0.0
@@ -433,9 +452,11 @@ class TripFormFrame(ctk.CTkScrollableFrame):
             ("km_loaded", "Km Încărcat", "Detalii Traseu"),
             ("location", "Locație/Rută", "Detalii Traseu"),
             ("route_description", "Descriere Traseu", "Detalii Traseu"),
+            ("is_external", "Cursă Externă", "Detalii Traseu"),
             
             ("client", "Client", "Detalii Marfă"),
             ("transport_type", "Tip Transport", "Detalii Marfă"),
+            ("special_transport_count", "Nr. Curse Speciale", "Detalii Marfă"),
             ("cargo_type", "Tip Marfă", "Detalii Marfă"),
             ("trailer", "Remorcă", "Detalii Marfă"),
             ("notice_number", "Nr. Aviz", "Detalii Marfă"),
@@ -502,7 +523,7 @@ class TripFormFrame(ctk.CTkScrollableFrame):
                     var.trace_add("write", self.calculate_loaded_km)
                 
                 if field_id == "presence":
-                    widget = ctk.CTkOptionMenu(self, variable=var, values=["Prezent", "Absent", "Concediu", "Medical", "Liber"])
+                    widget = ctk.CTkOptionMenu(self, variable=var, values=["Prezent", "Liber", "Garaj", "Medical", "Concediu"])
                     var.set("Prezent")
                 elif field_id == "total_price":
                     widget = ctk.CTkEntry(self, textvariable=var, font=ctk.CTkFont(weight="bold"), text_color="#f39c12")
@@ -524,6 +545,27 @@ class TripFormFrame(ctk.CTkScrollableFrame):
                 elif field_id == "location":
                     vals = database.get_distinct_values("location")
                     widget = ctk.CTkComboBox(self, variable=var, values=vals)
+                elif field_id == "transport_type":
+                    base_vals = ["", "AGABARITIC", "ADR", "INSOTIRE"]
+                    db_vals = database.get_distinct_values("transport_type")
+                    vals = list(dict.fromkeys(base_vals + db_vals))
+                    widget = ctk.CTkComboBox(self, variable=var, values=vals)
+                elif field_id == "trailer":
+                    vals = ["NU", "DA"]
+                    widget = ctk.CTkComboBox(self, variable=var, values=vals)
+                    var.set("NU")
+                elif field_id == "is_external":
+                    vals = ["NU", "DA"]
+                    widget = ctk.CTkComboBox(self, variable=var, values=vals)
+                    var.set("NU")
+                elif field_id == "is_external":
+                    vals = ["NU", "DA"]
+                    widget = ctk.CTkComboBox(self, variable=var, values=vals)
+                    var.set("NU")
+                elif field_id == "special_transport_count":
+                    widget = ctk.CTkEntry(self, textvariable=var)
+                    if not self.edit_trip:
+                        var.set("1")
                 else:
                     widget = ctk.CTkEntry(self, textvariable=var)
                     
@@ -597,13 +639,18 @@ class TripFormFrame(ctk.CTkScrollableFrame):
                 continue
                 
             val = self.vars[field].get().strip()
-            if field in ["presence", "date", "driver_name", "auto_number", "auto_type", "client", "transport_type", "cargo_type", "trailer", "location", "notice_number", "uit_code"]:
+            if field in ["presence", "date", "driver_name", "auto_number", "auto_type", "client", "transport_type", "cargo_type", "trailer", "location", "notice_number", "uit_code", "is_external"]:
                 data[field] = val
             elif field == "trip_count":
                 try:
                     data[field] = int(val) if val else 0
                 except ValueError:
                     data[field] = 0
+            elif field == "special_transport_count":
+                try:
+                    data[field] = int(val) if val else 1
+                except ValueError:
+                    data[field] = 1
             else:
                 try:
                     data[field] = float(val.replace(',', '.')) if val else 0.0
@@ -802,7 +849,25 @@ class CentralizatorFrame(ctk.CTkFrame):
             checkboxes[db_col] = var
             
         def do_export():
-            filename = filedialog.asksaveasfilename(defaultextension=".xlsx", filetypes=[("Excel Files", "*.xlsx")])
+            # Get current filter values to build default filename
+            driver = self.driver_var.get()
+            sd = self.start_date_var.get() if self.use_date_var.get() else ""
+            
+            month_year_str = ""
+            if sd:
+                try:
+                    import datetime
+                    dt = datetime.datetime.strptime(sd, "%Y-%m-%d")
+                    month_year_str = f"{dt.month}-{dt.year}"
+                except:
+                    month_year_str = sd
+            
+            if not driver or driver == "Toți":
+                default_name = f"Activitate Generala {month_year_str}".strip()
+            else:
+                default_name = f"Activitate {driver} {month_year_str}".strip()
+
+            filename = filedialog.asksaveasfilename(initialfile=default_name, defaultextension=".xlsx", filetypes=[("Excel Files", "*.xlsx")])
             if not filename:
                 return
                 
@@ -1117,6 +1182,550 @@ class FinanciarFrame(ctk.CTkFrame):
             apply_excel_formatting(filename)
             messagebox.showinfo("Succes", "Raportul financiar a fost exportat cu succes!")
 
+
+class SalariesFrame(ctk.CTkFrame):
+    def __init__(self, master):
+        super().__init__(master, fg_color="transparent")
+        
+        # Zone A: Setare Profil
+        zone_a = ctk.CTkFrame(self)
+        zone_a.pack(fill="x", pady=(0, 20))
+        
+        ctk.CTkLabel(zone_a, text="Setare Profil Șofer", font=ctk.CTkFont(weight="bold", size=18)).pack(anchor="w", pady=(10, 5), padx=10)
+        
+        grid_a = ctk.CTkFrame(zone_a, fg_color="transparent")
+        grid_a.pack(fill="x", padx=10, pady=10)
+        
+        # ROW 0
+        ctk.CTkLabel(grid_a, text="Șofer:").grid(row=0, column=0, padx=5, pady=5, sticky="e")
+        self.profile_driver_var = ctk.StringVar()
+        driver_cb = ctk.CTkComboBox(grid_a, variable=self.profile_driver_var, values=database.get_distinct_values("driver_name"), command=self.load_profile_data)
+        driver_cb.grid(row=0, column=1, padx=5, pady=5, sticky="w")
+        
+        ctk.CTkLabel(grid_a, text="Salariu Bază:").grid(row=0, column=2, padx=5, pady=5, sticky="e")
+        self.base_salary_var = ctk.StringVar(value="0.0")
+        ctk.CTkEntry(grid_a, textvariable=self.base_salary_var, width=80).grid(row=0, column=3, padx=5, pady=5, sticky="w")
+        
+        ctk.CTkLabel(grid_a, text="Tarif / Zi:").grid(row=0, column=4, padx=5, pady=5, sticky="e")
+        self.day_rate_var = ctk.StringVar(value="0.0")
+        ctk.CTkEntry(grid_a, textvariable=self.day_rate_var, width=80).grid(row=0, column=5, padx=5, pady=5, sticky="w")
+        
+        ctk.CTkLabel(grid_a, text="Tarif / KM:").grid(row=0, column=6, padx=5, pady=5, sticky="e")
+        self.km_rate_var = ctk.StringVar(value="0.0")
+        ctk.CTkEntry(grid_a, textvariable=self.km_rate_var, width=80).grid(row=0, column=7, padx=5, pady=5, sticky="w")
+        
+        # ROW 1 (Standard Rates)
+        ctk.CTkLabel(grid_a, text="Tarif Diurnă:").grid(row=1, column=0, padx=5, pady=5, sticky="e")
+        self.diurna_rate_var = ctk.StringVar(value="0.0")
+        ctk.CTkEntry(grid_a, textvariable=self.diurna_rate_var, width=80).grid(row=1, column=1, padx=5, pady=5, sticky="w")
+        
+        ctk.CTkLabel(grid_a, text="Tarif Premiere:").grid(row=1, column=2, padx=5, pady=5, sticky="e")
+        self.premiere_rate_var = ctk.StringVar(value="0.0")
+        ctk.CTkEntry(grid_a, textvariable=self.premiere_rate_var, width=80).grid(row=1, column=3, padx=5, pady=5, sticky="w")
+        
+        ctk.CTkLabel(grid_a, text="Tarif Bon Masă:").grid(row=1, column=4, padx=5, pady=5, sticky="e")
+        self.meal_rate_var = ctk.StringVar(value="0.0")
+        ctk.CTkEntry(grid_a, textvariable=self.meal_rate_var, width=80).grid(row=1, column=5, padx=5, pady=5, sticky="w")
+        
+        ctk.CTkLabel(grid_a, text="Spor Weekend/Zi:").grid(row=1, column=6, padx=5, pady=5, sticky="e")
+        self.weekend_rate_var = ctk.StringVar(value="0.0")
+        ctk.CTkEntry(grid_a, textvariable=self.weekend_rate_var, width=80).grid(row=1, column=7, padx=5, pady=5, sticky="w")
+        
+        # ROW 2 (New Transport Bonuses)
+        ctk.CTkLabel(grid_a, text="Spor Sărbăt/Zi:").grid(row=2, column=0, padx=5, pady=5, sticky="e")
+        self.holiday_rate_var = ctk.StringVar(value="0.0")
+        ctk.CTkEntry(grid_a, textvariable=self.holiday_rate_var, width=80).grid(row=2, column=1, padx=5, pady=5, sticky="w")
+        
+        ctk.CTkLabel(grid_a, text="Tarif Agabaritic:").grid(row=2, column=2, padx=5, pady=5, sticky="e")
+        self.agabaritic_rate_var = ctk.StringVar(value="0.0")
+        ctk.CTkEntry(grid_a, textvariable=self.agabaritic_rate_var, width=80).grid(row=2, column=3, padx=5, pady=5, sticky="w")
+        
+        ctk.CTkLabel(grid_a, text="Tarif ADR:").grid(row=2, column=4, padx=5, pady=5, sticky="e")
+        self.adr_rate_var = ctk.StringVar(value="0.0")
+        ctk.CTkEntry(grid_a, textvariable=self.adr_rate_var, width=80).grid(row=2, column=5, padx=5, pady=5, sticky="w")
+        
+        ctk.CTkLabel(grid_a, text="Tarif Însoțire:").grid(row=2, column=6, padx=5, pady=5, sticky="e")
+        self.insotire_rate_var = ctk.StringVar(value="0.0")
+        ctk.CTkEntry(grid_a, textvariable=self.insotire_rate_var, width=80).grid(row=2, column=7, padx=5, pady=5, sticky="w")
+        
+        # ROW 3 (Trailer & External Rates & Buttons)
+        ctk.CTkLabel(grid_a, text="Tarif Remorcă:").grid(row=3, column=0, padx=5, pady=5, sticky="e")
+        self.trailer_rate_var = ctk.StringVar(value="0.0")
+        ctk.CTkEntry(grid_a, textvariable=self.trailer_rate_var, width=80).grid(row=3, column=1, padx=5, pady=5, sticky="w")
+        
+        ctk.CTkLabel(grid_a, text="Tarif Extern(€/100km):").grid(row=3, column=2, padx=5, pady=5, sticky="e")
+        self.external_rate_var = ctk.StringVar(value="0.0")
+        ctk.CTkEntry(grid_a, textvariable=self.external_rate_var, width=80).grid(row=3, column=3, padx=5, pady=5, sticky="w")
+        
+        ctk.CTkButton(grid_a, text="Salvează Profil", command=self.save_profile).grid(row=3, column=4, padx=20, pady=5, sticky="we")
+        ctk.CTkButton(grid_a, text="Șterge Profil", command=self.delete_profile, fg_color="red", hover_color="darkred").grid(row=3, column=5, padx=5, pady=5, sticky="we")
+        ctk.CTkButton(grid_a, text="Vezi toate", command=self.show_all_profiles, fg_color="#3498db", hover_color="#2980b9").grid(row=3, column=6, columnspan=2, padx=20, pady=5, sticky="we")
+        
+        # Zone B: Calcul Salariu Lunar
+        zone_b = ctk.CTkFrame(self)
+        zone_b.pack(fill="both", expand=True)
+        
+        ctk.CTkLabel(zone_b, text="Calcul Salariu Lunar", font=ctk.CTkFont(weight="bold", size=18)).pack(anchor="w", pady=(10, 5), padx=10)
+        
+        grid_b = ctk.CTkFrame(zone_b, fg_color="transparent")
+        grid_b.pack(fill="x", padx=10, pady=10)
+        
+        ctk.CTkLabel(grid_b, text="Șofer:").grid(row=0, column=0, padx=5, pady=5, sticky="e")
+        self.calc_driver_var = ctk.StringVar()
+        ctk.CTkComboBox(grid_b, variable=self.calc_driver_var, values=database.get_distinct_values("driver_name")).grid(row=0, column=1, padx=5, pady=5, sticky="w")
+        
+        ctk.CTkLabel(grid_b, text="Luna:").grid(row=0, column=2, padx=5, pady=5, sticky="e")
+        import datetime
+        self.month_var = ctk.StringVar(value=str(datetime.datetime.now().month))
+        ctk.CTkOptionMenu(grid_b, variable=self.month_var, values=[str(i) for i in range(1, 13)], width=60).grid(row=0, column=3, padx=5, pady=5, sticky="w")
+        
+        ctk.CTkLabel(grid_b, text="An:").grid(row=0, column=4, padx=5, pady=5, sticky="e")
+        self.year_var = ctk.StringVar(value=str(datetime.datetime.now().year))
+        ctk.CTkOptionMenu(grid_b, variable=self.year_var, values=[str(i) for i in range(2023, 2031)], width=80).grid(row=0, column=5, padx=5, pady=5, sticky="w")
+        
+        ctk.CTkLabel(grid_b, text="Curs Valutar (RON/€):").grid(row=0, column=6, padx=5, pady=5, sticky="e")
+        self.exchange_rate_var = ctk.StringVar(value="5.00")
+        ctk.CTkEntry(grid_b, textvariable=self.exchange_rate_var, width=60).grid(row=0, column=7, padx=5, pady=5, sticky="w")
+        
+        ctk.CTkLabel(grid_b, text="Avans (Lei):").grid(row=1, column=0, padx=5, pady=5, sticky="e")
+        self.advance_var = ctk.StringVar(value="0.0")
+        ctk.CTkEntry(grid_b, textvariable=self.advance_var).grid(row=1, column=1, padx=5, pady=5, sticky="w")
+        
+        ctk.CTkButton(grid_b, text="Calculează Lichidare", command=self.calculate_salary, fg_color="#27ae60", hover_color="#2ecc71").grid(row=1, column=2, columnspan=3, padx=20, pady=5, sticky="w")
+        self.export_btn = ctk.CTkButton(grid_b, text="Exportă Raport Excel", command=self.export_excel_report, fg_color="#8e44ad", hover_color="#9b59b6", state="disabled")
+        self.export_btn.grid(row=1, column=5, columnspan=3, padx=5, pady=5, sticky="e")
+        
+        self.result_text = ctk.CTkTextbox(zone_b, font=ctk.CTkFont(family="Courier", size=14))
+        self.result_text.pack(fill="both", expand=True, padx=10, pady=10)
+        
+    def load_profile_data(self, driver_name):
+        profile = database.get_driver_profile(driver_name)
+        if profile and any(v > 0 for v in profile.values()):
+            self.base_salary_var.set(str(profile.get("base_salary", 0.0)))
+            self.day_rate_var.set(str(profile.get("day_rate", 0.0)))
+            self.km_rate_var.set(str(profile.get("km_rate", 0.0)))
+            self.diurna_rate_var.set(str(profile.get("diurna_rate", 0.0)))
+            self.premiere_rate_var.set(str(profile.get("premiere_rate", 0.0)))
+            self.meal_rate_var.set(str(profile.get("meal_ticket_rate", 0.0)))
+            self.weekend_rate_var.set(str(profile.get("weekend_rate", 0.0)))
+            self.holiday_rate_var.set(str(profile.get("holiday_rate", 0.0)))
+            self.agabaritic_rate_var.set(str(profile.get("agabaritic_rate", 0.0)))
+            self.adr_rate_var.set(str(profile.get("adr_rate", 0.0)))
+            self.insotire_rate_var.set(str(profile.get("insotire_rate", 0.0)))
+            self.trailer_rate_var.set(str(profile.get("trailer_rate", 0.0)))
+            self.external_rate_var.set(str(profile.get("external_rate", 0.0)))
+        else:
+            self.base_salary_var.set("0.0")
+            self.day_rate_var.set("0.0")
+            self.km_rate_var.set("0.0")
+            self.diurna_rate_var.set("0.0")
+            self.premiere_rate_var.set("0.0")
+            self.meal_rate_var.set("0.0")
+            self.weekend_rate_var.set("0.0")
+            self.holiday_rate_var.set("0.0")
+            self.agabaritic_rate_var.set("0.0")
+            self.adr_rate_var.set("0.0")
+            self.insotire_rate_var.set("0.0")
+            self.trailer_rate_var.set("0.0")
+            self.external_rate_var.set("0.0")
+
+    def delete_profile(self):
+        name = self.profile_driver_var.get()
+        if not name:
+            messagebox.showwarning("Eroare", "Selectează un șofer!")
+            return
+            
+        if messagebox.askyesno("Confirmare", f"Ești sigur că vrei să ștergi profilul pentru {name}?"):
+            database.delete_driver_profile(name)
+            messagebox.showinfo("Succes", f"Profilul pentru {name} a fost șters.")
+            self.profile_driver_var.set("")
+            self.base_salary_var.set("0.0")
+            self.day_rate_var.set("0.0")
+            self.km_rate_var.set("0.0")
+            self.diurna_rate_var.set("0.0")
+            self.premiere_rate_var.set("0.0")
+            self.meal_rate_var.set("0.0")
+            self.weekend_rate_var.set("0.0")
+            self.holiday_rate_var.set("0.0")
+            self.agabaritic_rate_var.set("0.0")
+            self.adr_rate_var.set("0.0")
+            self.insotire_rate_var.set("0.0")
+            self.trailer_rate_var.set("0.0")
+            self.external_rate_var.set("0.0")
+
+    def show_all_profiles(self):
+        popup = ctk.CTkToplevel(self)
+        popup.title("Toate Profilurile")
+        popup.geometry("1100x400")
+        
+        txt = ctk.CTkTextbox(popup, font=ctk.CTkFont(family="Courier", size=14))
+        txt.pack(fill="both", expand=True, padx=10, pady=10)
+        
+        profiles = database.get_all_driver_profiles()
+        if not profiles:
+            txt.insert("end", "Nu există profiluri salvate în baza de date.")
+        else:
+            for p in profiles:
+                txt.insert("end", f"Șofer: {p['driver_name']:<15} | Bază: {p['base_salary']} | Zi: {p['day_rate']} | KM: {p['km_rate']} | Diurnă: {p['diurna_rate']} | Bon: {p['meal_ticket_rate']} | Wknd: {p['weekend_rate']} | Sărb: {p['holiday_rate']} | Agab: {p['agabaritic_rate']} | ADR: {p['adr_rate']} | Îns: {p['insotire_rate']} | Remorcă: {p['trailer_rate']} | Extern: {p.get('external_rate', 0.0)}\n")
+        
+        txt.configure(state="disabled")
+        
+    def save_profile(self):
+        name = self.profile_driver_var.get()
+        if not name:
+            messagebox.showwarning("Eroare", "Selectează un șofer!")
+            return
+        try:
+            base = float(self.base_salary_var.get())
+            day = float(self.day_rate_var.get())
+            km = float(self.km_rate_var.get())
+            diurna = float(self.diurna_rate_var.get())
+            premiere = float(self.premiere_rate_var.get())
+            meal = float(self.meal_rate_var.get())
+            weekend = float(self.weekend_rate_var.get())
+            holiday = float(self.holiday_rate_var.get())
+            agab = float(self.agabaritic_rate_var.get())
+            adr = float(self.adr_rate_var.get())
+            insot = float(self.insotire_rate_var.get())
+            trail = float(self.trailer_rate_var.get())
+            ext = float(self.external_rate_var.get())
+            
+            database.save_driver_profile(name, base, day, km, diurna, premiere, meal, weekend, holiday, agab, adr, insot, trail, ext)
+            messagebox.showinfo("Succes", f"Profilul pentru {name} a fost salvat.")
+        except ValueError:
+            messagebox.showerror("Eroare", "Valorile financiare trebuie să fie numere.")
+            
+    def calculate_salary(self):
+        driver = self.calc_driver_var.get()
+        month = self.month_var.get()
+        year = self.year_var.get()
+        if not driver:
+            messagebox.showwarning("Eroare", "Selectează un șofer!")
+            return
+            
+        try: advance = float(self.advance_var.get())
+        except ValueError: advance = 0.0
+        
+        try: exchange_rate = float(self.exchange_rate_var.get())
+        except ValueError: exchange_rate = 5.00
+        
+        profile = database.get_driver_profile(driver)
+        base_salary = profile.get("base_salary", 0.0)
+        day_rate = profile.get("day_rate", 0.0)
+        km_rate = profile.get("km_rate", 0.0)
+        diurna_rate = profile.get("diurna_rate", 0.0)
+        premiere_rate = profile.get("premiere_rate", 0.0)
+        meal_rate = profile.get("meal_ticket_rate", 0.0)
+        weekend_rate = profile.get("weekend_rate", 0.0)
+        holiday_rate = profile.get("holiday_rate", 0.0)
+        agab_rate = profile.get("agabaritic_rate", 0.0)
+        adr_rate = profile.get("adr_rate", 0.0)
+        insotire_rate = profile.get("insotire_rate", 0.0)
+        trailer_rate = profile.get("trailer_rate", 0.0)
+        external_rate = profile.get("external_rate", 0.0)
+        
+        trips = database.get_trips_for_salary(driver, month, year)
+        
+        from collections import defaultdict
+        import datetime
+        import holidays
+        
+        ro_holidays = holidays.RO(years=int(year))
+        
+        daily_data = defaultdict(lambda: {"internal_km": 0.0, "external_km": 0.0, "clients": set(), "presence": set(), "has_external": False})
+        
+        qty_allowance = 0.0
+        qty_bonus = 0.0
+        qty_meal = 0.0
+        
+        agab_count = 0
+        adr_count = 0
+        insotire_count = 0
+        trailer_count = 0
+        
+        for t in trips:
+            d = t["date"]
+            is_ext = str(t.get("is_external", "")).strip().upper() == "DA"
+            
+            km_for_trip = t["km_total"] or 0.0
+            if is_ext:
+                daily_data[d]["external_km"] += km_for_trip
+                daily_data[d]["has_external"] = True
+            else:
+                daily_data[d]["internal_km"] += km_for_trip
+                
+            daily_data[d]["clients"].add(str(t["client"]).upper().strip())
+            daily_data[d]["presence"].add(str(t.get("presence", "")).strip())
+            
+            # The values from Centralizator act as Quantities
+            qty_allowance += (t["daily_allowance"] or 0.0)
+            qty_bonus += (t["bonus"] or 0.0)
+            qty_meal += (t["meal_tickets"] or 0.0)
+            
+            # Count transport types
+            sp_raw = t.get("special_transport_count")
+            sp_count = int(sp_raw) if sp_raw is not None and str(sp_raw).strip() != "" else 1
+            
+            ttype = str(t.get("transport_type", "")).upper().strip()
+            if ttype == "AGABARITIC": agab_count += 1 * sp_count
+            if ttype == "ADR": adr_count += 1 * sp_count
+            if ttype == "INSOTIRE": insotire_count += 1 * sp_count
+            
+            trailer_val = str(t.get("trailer", "")).upper().strip()
+            if trailer_val == "DA": trailer_count += 1 * sp_count
+            
+        paid_days_count = 0
+        internal_km_pay_total = 0.0
+        days_log = []
+        total_internal_km_month = 0.0
+        total_external_km_month = 0.0
+        
+        weekend_days_worked = 0
+        holiday_days_worked = 0
+        
+        export_data = []
+        
+        for d, data in sorted(daily_data.items()):
+            int_km = data["internal_km"]
+            ext_km = data["external_km"]
+            total_km = int_km + ext_km
+            clients = data["clients"]
+            presences = data["presence"]
+            has_ext = data["has_external"]
+            
+            total_internal_km_month += int_km
+            total_external_km_month += ext_km
+            
+            try:
+                dt = datetime.datetime.strptime(d.strip(), "%Y-%m-%d").date()
+                is_weekend = dt.weekday() >= 5
+                is_holiday = dt in ro_holidays
+            except Exception:
+                is_weekend = False
+                is_holiday = False
+                
+            valid_clients = [c for c in clients if c and c not in ("NONE", "")]
+            has_non_aguaki = any(c != "AGUAKI" for c in valid_clients)
+            is_paid_stationare = (total_km == 0 and len(valid_clients) > 0 and has_non_aguaki)
+            
+            if (total_km > 0 or is_paid_stationare) and not ("Liber" in presences or "Garaj" in presences):
+                if is_weekend:
+                    weekend_days_worked += 1
+                if is_holiday:
+                    holiday_days_worked += 1
+            is_only_aguaki = (len(valid_clients) == 1 and "AGUAKI" in valid_clients)
+            
+            day_pay_val = 0.0
+            km_pay_val = 0.0
+            ext_pay_euro = 0.0
+            status_desc = ""
+            
+            if "Liber" in presences or "Garaj" in presences:
+                status_desc = "Nu s-a lucrat (Liber/Garaj)"
+                days_log.append(f"{d} | {total_km:.1f} KM | {status_desc} -> Plată = 0 Lei")
+            elif total_km == 0:
+                has_non_aguaki = any(c != "AGUAKI" for c in valid_clients)
+                if len(valid_clients) > 0 and has_non_aguaki:
+                    paid_days_count += 1
+                    day_pay_val = day_rate
+                    status_desc = "Staționare Client (!=AGUAKI)"
+                    days_log.append(f"{d} | {total_km:.1f} KM | {status_desc} -> Plată la zi: {day_pay_val:.2f} Lei")
+                else:
+                    status_desc = "Nu s-a lucrat (KM=0)"
+                    days_log.append(f"{d} | {total_km:.1f} KM | {status_desc} -> Plată = 0 Lei")
+            elif has_ext:
+                # Variant A logic: No day rate. External km paid in Euro, Internal km paid at km_rate
+                ext_pay_euro = (ext_km * external_rate) / 100
+                if int_km > 0:
+                    km_pay_val = int_km * km_rate
+                    internal_km_pay_total += km_pay_val
+                
+                status_desc = f"Mixt/Extern (Anulare plată zi)"
+                days_log.append(f"{d} | Ext:{ext_km:.1f}KM Int:{int_km:.1f}KM | -> {ext_pay_euro:.2f} € / {km_pay_val:.2f} Lei")
+            else:
+                # Normal Internal Logic
+                if km_rate > 0 and int_km > 350:
+                    km_pay_val = int_km * km_rate
+                    internal_km_pay_total += km_pay_val
+                    status_desc = "Regula >350KM"
+                    days_log.append(f"{d} | {int_km:.1f} KM | {status_desc} -> Bani din KM: {km_pay_val:.2f} Lei")
+                else:
+                    if is_only_aguaki:
+                        status_desc = "Doar AGUAKI"
+                        days_log.append(f"{d} | {int_km:.1f} KM | {status_desc} -> Plată la zi = 0 Lei")
+                    else:
+                        paid_days_count += 1
+                        day_pay_val = day_rate
+                        status_desc = "Zi internă (Eligibil day_rate)"
+                        days_log.append(f"{d} | {int_km:.1f} KM | {status_desc} -> Plată la zi: {day_pay_val:.2f} Lei")
+            
+            export_data.append({
+                "Dată": d,
+                "Total KM": total_km,
+                "Int KM": int_km,
+                "Ext KM": ext_km,
+                "Status/Clienți": status_desc + " (" + ", ".join(clients) + ")",
+                "Plată Zi (Lei)": day_pay_val,
+                "Plată KM (Lei)": km_pay_val,
+                "Plată Ext (€)": ext_pay_euro
+            })
+                    
+        days_pay_total = paid_days_count * day_rate
+        total_external_euro = (total_external_km_month * external_rate) / 100
+        total_external_ron = total_external_euro * exchange_rate
+        
+        weekend_pay_total = weekend_days_worked * weekend_rate
+        holiday_pay_total = holiday_days_worked * holiday_rate
+        
+        total_allowance = qty_allowance * diurna_rate
+        total_bonus = qty_bonus * premiere_rate
+        total_meal = qty_meal * meal_rate
+        
+        agab_pay_total = agab_count * agab_rate
+        adr_pay_total = adr_count * adr_rate
+        insotire_pay_total = insotire_count * insotire_rate
+        trailer_pay_total = trailer_count * trailer_rate
+        
+        total_salary = (base_salary + days_pay_total + internal_km_pay_total + total_external_ron + weekend_pay_total + holiday_pay_total + 
+                       total_allowance + total_bonus + total_meal + 
+                       agab_pay_total + adr_pay_total + insotire_pay_total + trailer_pay_total)
+        rest_plata = total_salary - advance - total_meal
+        
+        import pandas as pd
+        self.current_salary_report_df = pd.DataFrame(export_data)
+        self.summary_data = {
+            "driver": driver,
+            "month": month,
+            "year": year,
+            "base_salary": base_salary,
+            "total_internal_km_month": total_internal_km_month,
+            "total_external_km_month": total_external_km_month,
+            "total_external_euro": total_external_euro,
+            "exchange_rate": exchange_rate,
+            "total_external_ron": total_external_ron,
+            "weekend_days_worked": weekend_days_worked,
+            "weekend_pay_total": weekend_pay_total,
+            "holiday_days_worked": holiday_days_worked,
+            "holiday_pay_total": holiday_pay_total,
+            "qty_allowance": qty_allowance,
+            "total_allowance": total_allowance,
+            "qty_bonus": qty_bonus,
+            "total_bonus": total_bonus,
+            "qty_meal": qty_meal,
+            "total_meal": total_meal,
+            "agab_count": agab_count,
+            "agab_pay_total": agab_pay_total,
+            "adr_count": adr_count,
+            "adr_pay_total": adr_pay_total,
+            "insotire_count": insotire_count,
+            "insotire_pay_total": insotire_pay_total,
+            "trailer_count": trailer_count,
+            "trailer_pay_total": trailer_pay_total,
+            "total_salary": total_salary,
+            "advance": advance,
+            "rest_plata": rest_plata
+        }
+        
+        report = []
+        report.append(f"=== RAPORT SALARIZARE: {driver} ({month}/{year}) ===")
+        report.append(f"Salariu de bază: {base_salary:.2f} Lei")
+        report.append("-" * 50)
+        report.append(f"Total KM Interni: {total_internal_km_month:.1f} KM")
+        report.append(f"Zile Plătite la Zi (<=350km intern): {paid_days_count} x {day_rate:.2f} = {days_pay_total:.2f} Lei")
+        report.append(f"Bani KM Intern (>350km sau Mixt): {internal_km_pay_total:.2f} Lei")
+        if total_external_km_month > 0:
+            report.append("-" * 50)
+            report.append(f"Total KM Externi: {total_external_km_month:.1f} KM")
+            report.append(f"Bani Extern: {total_external_euro:.2f} Euro (Curs: {exchange_rate}) -> {total_external_ron:.2f} RON")
+        report.append("-" * 50)
+        
+        if weekend_pay_total > 0: report.append(f"Bani din Weekend ({weekend_days_worked} zile): {weekend_pay_total:.2f} Lei")
+        if holiday_pay_total > 0: report.append(f"Bani din Sărbători ({holiday_days_worked} zile): {holiday_pay_total:.2f} Lei")
+        if agab_pay_total > 0: report.append(f"Spor Agabaritic ({agab_count} curse): {agab_pay_total:.2f} Lei")
+        if adr_pay_total > 0: report.append(f"Spor ADR ({adr_count} curse): {adr_pay_total:.2f} Lei")
+        if insotire_pay_total > 0: report.append(f"Spor Însoțire ({insotire_count} curse): {insotire_pay_total:.2f} Lei")
+        if trailer_pay_total > 0: report.append(f"Spor Remorcă ({trailer_count} curse): {trailer_pay_total:.2f} Lei")
+        
+        report.append("-" * 50)
+        report.append(f"Diurnă ({qty_allowance} x {diurna_rate:.2f}): {total_allowance:.2f} Lei")
+        report.append(f"Premiere ({qty_bonus} x {premiere_rate:.2f}): {total_bonus:.2f} Lei")
+        if total_meal > 0: report.append(f"Bani Bonuri Masă ({qty_meal} x {meal_rate:.2f}): {total_meal:.2f} Lei")
+        report.append("-" * 50)
+        report.append(f"TOTAL SALARIU (Brut): {total_salary:.2f} Lei")
+        if advance > 0: report.append(f"Deducere Avans: -{advance:.2f} Lei")
+        if total_meal > 0: report.append(f"Deducere Bonuri Masă: -{total_meal:.2f} Lei")
+        report.append(f"REST DE PLATĂ (Lichidare): {rest_plata:.2f} Lei")
+        report.append("=" * 50)
+        report.append("Detalii pe Zile:")
+        report.extend(days_log)
+        
+        self.result_text.delete("1.0", "end")
+        self.result_text.insert("end", "\n".join(report))
+        self.export_btn.configure(state="normal")
+
+    def export_excel_report(self):
+        if not hasattr(self, 'current_salary_report_df') or self.current_salary_report_df is None or self.current_salary_report_df.empty:
+            messagebox.showwarning("Eroare", "Calculează întâi lichidarea!")
+            return
+            
+        default_filename = f"Salarizare_{self.summary_data['driver'].replace(' ', '_')}_{self.summary_data['month']}_{self.summary_data['year']}.xlsx"
+        filename = filedialog.asksaveasfilename(initialfile=default_filename, defaultextension=".xlsx", filetypes=[("Excel Files", "*.xlsx")])
+        if not filename:
+            return
+            
+        df = self.current_salary_report_df.copy()
+        
+        summary_rows = [
+            {"Dată": "", "Total KM": "", "Int KM": "", "Ext KM": "", "Status/Clienți": "", "Plată Zi (Lei)": "", "Plată KM (Lei)": "", "Plată Ext (€)": ""},
+            {"Dată": "REZUMAT", "Total KM": "", "Int KM": "", "Ext KM": "", "Status/Clienți": "", "Plată Zi (Lei)": "", "Plată KM (Lei)": "", "Plată Ext (€)": ""},
+            {"Dată": "Salariu de bază", "Total KM": self.summary_data['base_salary'], "Int KM": "", "Ext KM": "", "Status/Clienți": "", "Plată Zi (Lei)": "", "Plată KM (Lei)": "", "Plată Ext (€)": ""},
+            {"Dată": "Total KM Interni", "Total KM": self.summary_data['total_internal_km_month'], "Int KM": "", "Ext KM": "", "Status/Clienți": "", "Plată Zi (Lei)": "", "Plată KM (Lei)": "", "Plată Ext (€)": ""},
+            {"Dată": "Total KM Externi", "Total KM": self.summary_data['total_external_km_month'], "Int KM": "", "Ext KM": "", "Status/Clienți": "", "Plată Zi (Lei)": "", "Plată KM (Lei)": "", "Plată Ext (€)": ""}
+        ]
+        
+        if self.summary_data['total_external_km_month'] > 0:
+            summary_rows.append({"Dată": "Bani Extern (€ -> RON)", "Total KM": self.summary_data['total_external_ron'], "Int KM": "", "Ext KM": "", "Status/Clienți": f"({self.summary_data['total_external_euro']:.2f} € x {self.summary_data['exchange_rate']})", "Plată Zi (Lei)": "", "Plată KM (Lei)": "", "Plată Ext (€)": ""})
+            
+        summary_rows.extend([
+            {"Dată": "Bani din Weekend", "Total KM": self.summary_data['weekend_pay_total'], "Int KM": "", "Ext KM": "", "Status/Clienți": f"({self.summary_data['weekend_days_worked']} zile)", "Plată Zi (Lei)": "", "Plată KM (Lei)": "", "Plată Ext (€)": ""},
+            {"Dată": "Bani din Sărbători", "Total KM": self.summary_data['holiday_pay_total'], "Int KM": "", "Ext KM": "", "Status/Clienți": f"({self.summary_data['holiday_days_worked']} zile)", "Plată Zi (Lei)": "", "Plată KM (Lei)": "", "Plată Ext (€)": ""}
+        ])
+        
+        if self.summary_data['agab_pay_total'] > 0:
+            summary_rows.append({"Dată": "Spor Agabaritic", "Total KM": self.summary_data['agab_pay_total'], "Int KM": "", "Ext KM": "", "Status/Clienți": f"({self.summary_data['agab_count']} curse)", "Plată Zi (Lei)": "", "Plată KM (Lei)": "", "Plată Ext (€)": ""})
+        if self.summary_data['adr_pay_total'] > 0:
+            summary_rows.append({"Dată": "Spor ADR", "Total KM": self.summary_data['adr_pay_total'], "Int KM": "", "Ext KM": "", "Status/Clienți": f"({self.summary_data['adr_count']} curse)", "Plată Zi (Lei)": "", "Plată KM (Lei)": "", "Plată Ext (€)": ""})
+        if self.summary_data['insotire_pay_total'] > 0:
+            summary_rows.append({"Dată": "Spor Însoțire", "Total KM": self.summary_data['insotire_pay_total'], "Int KM": "", "Ext KM": "", "Status/Clienți": f"({self.summary_data['insotire_count']} curse)", "Plată Zi (Lei)": "", "Plată KM (Lei)": "", "Plată Ext (€)": ""})
+        if self.summary_data['trailer_pay_total'] > 0:
+            summary_rows.append({"Dată": "Spor Remorcă", "Total KM": self.summary_data['trailer_pay_total'], "Int KM": "", "Ext KM": "", "Status/Clienți": f"({self.summary_data['trailer_count']} curse)", "Plată Zi (Lei)": "", "Plată KM (Lei)": "", "Plată Ext (€)": ""})
+            
+        summary_rows.extend([
+            {"Dată": "Total Diurnă", "Total KM": self.summary_data['total_allowance'], "Int KM": "", "Ext KM": "", "Status/Clienți": f"(cant: {self.summary_data['qty_allowance']})", "Plată Zi (Lei)": "", "Plată KM (Lei)": "", "Plată Ext (€)": ""},
+            {"Dată": "Total Premiere", "Total KM": self.summary_data['total_bonus'], "Int KM": "", "Ext KM": "", "Status/Clienți": f"(cant: {self.summary_data['qty_bonus']})", "Plată Zi (Lei)": "", "Plată KM (Lei)": "", "Plată Ext (€)": ""},
+            {"Dată": "TOTAL SALARIU (Brut)", "Total KM": self.summary_data['total_salary'], "Int KM": "", "Ext KM": "", "Status/Clienți": "", "Plată Zi (Lei)": "", "Plată KM (Lei)": "", "Plată Ext (€)": ""},
+            {"Dată": "Deducere Avans", "Total KM": -self.summary_data['advance'], "Int KM": "", "Ext KM": "", "Status/Clienți": "", "Plată Zi (Lei)": "", "Plată KM (Lei)": "", "Plată Ext (€)": ""},
+            {"Dată": "Deducere Bonuri Masă", "Total KM": -self.summary_data['total_meal'], "Int KM": "", "Ext KM": "", "Status/Clienți": f"(cant: {self.summary_data['qty_meal']})", "Plată Zi (Lei)": "", "Plată KM (Lei)": "", "Plată Ext (€)": ""},
+            {"Dată": "REST DE PLATĂ", "Total KM": self.summary_data['rest_plata'], "Int KM": "", "Ext KM": "", "Status/Clienți": "", "Plată Zi (Lei)": "", "Plată KM (Lei)": "", "Plată Ext (€)": ""}
+        ])
+        
+        import pandas as pd
+        summary_df = pd.DataFrame(summary_rows)
+        final_df = pd.concat([df, summary_df], ignore_index=True)
+        
+        with pd.ExcelWriter(filename, engine='openpyxl') as writer:
+            final_df.to_excel(writer, index=False, startrow=1)
+            workbook = writer.book
+            worksheet = writer.sheets['Sheet1']
+            worksheet.cell(row=1, column=1, value=f"Raport Salarizare - {self.summary_data['driver']} - {self.summary_data['month']}/{self.summary_data['year']}")
+            worksheet.merge_cells('A1:H1')
+            
+        try:
+            apply_excel_formatting(filename, date_col_name=None, tip_zi_col_name=None)
+        except Exception as e:
+            print(f"Formatting warning: {e}")
+            
+        messagebox.showinfo("Succes", "Raportul a fost exportat în Excel cu succes!")
 class MainDashboardFrame(ctk.CTkFrame):
     def __init__(self, master, role, logout_callback):
         super().__init__(master)
@@ -1147,6 +1756,9 @@ class MainDashboardFrame(ctk.CTkFrame):
 
         self.nav_financiar_btn = ctk.CTkButton(self.sidebar_frame, text="Raport Financiar", command=self.show_financiar)
         self.nav_financiar_btn.grid(row=4, column=0, padx=20, pady=10)
+        
+        self.nav_salarii_btn = ctk.CTkButton(self.sidebar_frame, text="Salarizare", command=self.show_salarii)
+        self.nav_salarii_btn.grid(row=5, column=0, padx=20, pady=10)
 
         # Logica de protecție a butoanelor în funcție de rol
         if self.role != "Admin":
@@ -1156,7 +1768,7 @@ class MainDashboardFrame(ctk.CTkFrame):
 
         # Buton Logout (jos)
         self.logout_btn = ctk.CTkButton(self.sidebar_frame, text="Logout", command=self.logout, fg_color="darkred", hover_color="red")
-        self.logout_btn.grid(row=6, column=0, padx=20, pady=20, sticky="s")
+        self.logout_btn.grid(row=7, column=0, padx=20, pady=20, sticky="s")
 
         # Zona de conținut (Dreapta)
         self.content_frame = ctk.CTkFrame(self, corner_radius=0, fg_color="transparent")
@@ -1192,6 +1804,12 @@ class MainDashboardFrame(ctk.CTkFrame):
         if self.current_content:
             self.current_content.destroy()
         self.current_content = FinanciarFrame(self.content_frame)
+        self.current_content.pack(fill="both", expand=True)
+        
+    def show_salarii(self):
+        if self.current_content:
+            self.current_content.destroy()
+        self.current_content = SalariesFrame(self.content_frame)
         self.current_content.pack(fill="both", expand=True)
 
     def logout(self):
