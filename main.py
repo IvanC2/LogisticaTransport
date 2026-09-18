@@ -1504,13 +1504,15 @@ class SalariesFrame(ctk.CTkFrame):
                 is_weekend = False
                 is_holiday = False
                 
-            if total_km > 0 and not ("Liber" in presences or "Garaj" in presences):
+            valid_clients = [c for c in clients if c and c not in ("NONE", "")]
+            has_non_aguaki = any(c != "AGUAKI" for c in valid_clients)
+            is_paid_stationare = (total_km == 0 and len(valid_clients) > 0 and has_non_aguaki)
+            
+            if (total_km > 0 or is_paid_stationare) and not ("Liber" in presences or "Garaj" in presences):
                 if is_weekend:
                     weekend_days_worked += 1
                 if is_holiday:
                     holiday_days_worked += 1
-                
-            valid_clients = [c for c in clients if c and c not in ("NONE", "")]
             is_only_aguaki = (len(valid_clients) == 1 and "AGUAKI" in valid_clients)
             
             day_pay_val = 0.0
